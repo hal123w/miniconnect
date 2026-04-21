@@ -1,4 +1,5 @@
 from django.urls import path
+from . import views 
 from .views import PostListView, PostCreateView, PostDeleteView, SignUpView, UserProfileView, like_post
 
 app_name = 'sns'
@@ -10,5 +11,5 @@ urlpatterns = [
     path('post/<int:pk>/delete/', PostDeleteView.as_view(), name='delete'),
     path('user/<str:username>/', UserProfileView.as_view(), name='user_posts'),
     path('post/<int:pk>/like/', like_post, name='like_post'),
-    path('profile/edit/', views.profile_edit, name='profile_edit'),
+    path('profile/edit/', views.profile_edit, name='profile_edit'), # ここでviewsを使っているのでOK！
 ]
