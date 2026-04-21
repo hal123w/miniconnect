@@ -16,7 +16,7 @@ class Post(models.Model):
         return f'{self.author.username}: {self.content[:10]}'
     
 class Profile(models.Model):
-    user = models.OneToOneField(User, on_submit=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     image = models.ImageField(default='default.png', upload_to='profile_pics')
     bio = models.TextField(max_length=160, blank=True, verbose_name="自己紹介")
 
