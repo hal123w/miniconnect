@@ -6,9 +6,9 @@ from django.contrib.auth.models import User
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect, JsonResponse
-from django.contrib import messages # メッセージ用に追加
-from .models import Post
-from .forms import PostForm, UserUpdateForm, ProfileUpdateForm # プロフィール用フォームを追加
+from django.contrib import messages
+from .models import Post, Profile  # ← ここに Profile を追加しました！
+from .forms import PostForm, UserUpdateForm, ProfileUpdateForm
 
 class PostListView(ListView):
     model = Post
@@ -72,9 +72,11 @@ def like_post(request, pk):
         'count': post.liked_by.count(),
     })
 
-# --- ここから下が足りなかったプロフィール編集機能です ---
 @login_required
 def profile_edit(request):
+    if not hasattr(request.user, 'profile'):
+        Profile.objects.create(user=request.user)
+        
     if request.method == 'POST':
         u_form = UserUpdateForm(request.POST, instance=request.user)
         p_form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user.profile)
