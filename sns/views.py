@@ -7,7 +7,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect, JsonResponse
 from django.contrib import messages
-from .models import Post, Profile  # ← ここに Profile を追加しました！
+from .models import Post, Profile
 from .forms import PostForm, UserUpdateForm, ProfileUpdateForm
 
 class PostListView(ListView):
@@ -19,6 +19,10 @@ class PostListView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['form'] = PostForm()
+        # ログインしている場合、自分のプロフィールがあるか確認（安全策）
+        if self.request.user.is_authenticated:
+            if not hasattr(self.request.user, 'profile'):
+                Profile.objects.create(user=self.request.user)
         return context
 
 class PostCreateView(LoginRequiredMixin, CreateView):
@@ -50,6 +54,9 @@ class UserProfileView(ListView):
 
     def get_queryset(self):
         self.user_obj = get_object_or_404(User, username=self.kwargs['username'])
+        # プロフィールがないユーザーを表示する場合の安全策
+        if not hasattr(self.user_obj, 'profile'):
+            Profile.objects.create(user=self.user_obj)
         return Post.objects.filter(author=self.user_obj).order_by('-created_at')
 
     def get_context_data(self, **kwargs):
