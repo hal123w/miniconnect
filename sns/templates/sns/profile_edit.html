@@ -1,17 +1,57 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>プロフィール編集</title>
-</head>
-<body>
-    <h1>プロフィール編集</h1>
-    <form method="POST" enctype="multipart/form-data">
-        {% csrf_token %}
-        {{ u_form.as_p }}
-        {{ p_form.as_p }}
-        <button type="submit">更新する</button>
-    </form>
-    <br>
-    <a href="/">トップに戻る</a>
-</body>
-</html>
+{% extends "sns/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3">
+                    <h4 class="mb-0 text-primary">プロフィール編集</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">ユーザー名</label>
+                            <div class="input-group">
+                                <span class="input-group-text">@</span>
+                                {{ u_form.username }}
+                            </div>
+                            <div class="form-text">サイト上で表示される名前です。</div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">プロフィール画像</label>
+                            <div class="border p-2 rounded bg-light">
+                                {{ p_form.image }}
+                            </div>
+                            <div class="form-text">自分らしい画像を選んでみましょう。</div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">自己紹介 (bio)</label>
+                            {{ p_form.bio }}
+                            <div class="form-text">趣味や好きなことについて書いてください。</div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary btn-lg" type="submit">設定を保存する</button>
+                            <a href="{% url 'sns:index' %}" class="btn btn-outline-secondary">キャンセル</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const inputs = document.querySelectorAll('input[type="text"], input[type="file"], textarea');
+        inputs.forEach(input => {
+            input.classList.add('form-control');
+        });
+    });
+</script>
+{% endblock %}
