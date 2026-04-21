@@ -24,8 +24,8 @@
                 <div class="card mb-4 shadow-sm border-0">
                     <div class="card-header bg-white d-flex align-items-center py-3">
                         <div class="me-3">
-                            {% if post.author.profile.image %}
-                                <img src="{{ post.author.profile.image.url }}" class="rounded-circle border" style="width: 48px; height: 48px; object-fit: cover;">
+                            {% if post.author.profile.image and post.author.profile.image.url %}
+                                <img src="{{ post.author.profile.image.url }}" class="rounded-circle border" style="width: 48px; height: 48px; object-fit: cover;" onerror="this.style.display='none'">
                             {% else %}
                                 <div class="rounded-circle bg-light d-flex align-items-center justify-content-center border" style="width: 48px; height: 48px;">
                                     <span class="text-secondary" style="font-size: 20px;">👤</span>
@@ -71,7 +71,7 @@
                 </div>
             {% empty %}
                 <div class="text-center py-5">
-                    <p class="text-muted">まだ投稿がありません。最初の投稿をしてみましょう！</p>
+                    <p class="text-muted">まだ投稿がありません。</p>
                 </div>
             {% endfor %}
         </div>
