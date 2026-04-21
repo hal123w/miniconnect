@@ -3,11 +3,12 @@ from django.views.generic import ListView, CreateView, DeleteView
 from django.urls import reverse_lazy, reverse
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from django.contrib.auth.mixins import LoginRequiredMixin  # 鍵を追加
-from django.contrib.auth.decorators import login_required  # 鍵を追加
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect, JsonResponse
+from django.contrib import messages # メッセージ用に追加
 from .models import Post
-from .forms import PostForm
+from .forms import PostForm, UserUpdateForm, ProfileUpdateForm # プロフィール用フォームを追加
 
 class PostListView(ListView):
     model = Post
@@ -20,7 +21,6 @@ class PostListView(ListView):
         context['form'] = PostForm()
         return context
 
-# LoginRequiredMixinを追加して「ログイン必須」にする
 class PostCreateView(LoginRequiredMixin, CreateView):
     model = Post
     form_class = PostForm
@@ -31,7 +31,6 @@ class PostCreateView(LoginRequiredMixin, CreateView):
         form.instance.author = self.request.user
         return super().form_valid(form)
 
-# LoginRequiredMixinを追加
 class PostDeleteView(LoginRequiredMixin, DeleteView):
     model = Post
     success_url = reverse_lazy('sns:index')
@@ -58,7 +57,6 @@ class UserProfileView(ListView):
         context['profile_user'] = self.user_obj
         return context
 
-# @login_requiredを追加して「いいね」もログイン必須にする
 @login_required
 def like_post(request, pk):
     post = get_object_or_404(Post, pk=pk)
@@ -69,8 +67,29 @@ def like_post(request, pk):
         post.liked_by.add(request.user)
         liked = True
     
-    # リダイレクトではなく、データを辞書形式で返す
     return JsonResponse({
         'liked': liked,
         'count': post.liked_by.count(),
     })
+
+# --- ここから下が足りなかったプロフィール編集機能です ---
+@login_required
+def profile_edit(request):
+    if request.method == 'POST':
+        u_form = UserUpdateForm(request.POST, instance=request.user)
+        p_form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user.profile)
+        
+        if u_form.is_valid() and p_form.is_valid():
+            u_form.save()
+            p_form.save()
+            messages.success(request, f'アカウント情報が更新されました！')
+            return HttpResponseRedirect(reverse('sns:index'))
+    else:
+        u_form = UserUpdateForm(instance=request.user)
+        p_form = ProfileUpdateForm(instance=request.user.profile)
+
+    context = {
+        'u_form': u_form,
+        'p_form': p_form
+    }
+    return render(request, 'sns/profile_edit.html', context)
