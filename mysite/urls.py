@@ -4,7 +4,7 @@ from django.conf import settings # 追加
 from django.conf.urls.static import static # 追加
 
 urlpatterns = [
-    path('admin/', admin.admin_site.urls),
+    path('admin/', admin.site.urls),
     path('', include('sns.urls')),
     path('', include('django.contrib.auth.urls')),
 ]
