@@ -113,7 +113,7 @@
             const countSpan = this.querySelector('.like-count');
 
             // サーバーに「いいね」をリクエスト
-            fetch(`/like/${postId}/`, {
+            fetch(`/post/${postId}/like/`, {
                 method: 'GET',
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             })
