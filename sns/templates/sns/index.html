@@ -8,8 +8,8 @@
                 <div class="card-body">
                     <form method="POST" action="{% url 'sns:create' %}">
                         {% csrf_token %}
-                        {{ form.content }}
-                        <button type="submit" class="btn btn-primary float-end mt-2">投稿する</button>
+                        <textarea name="content" class="form-control mb-2" rows="3" placeholder="今何してる？" required></textarea>
+                        <button type="submit" class="btn btn-primary float-end">投稿する</button>
                     </form>
                 </div>
             </div>
@@ -17,20 +17,30 @@
             {% for post in posts %}
             <div class="card mb-3 shadow-sm border-0">
                 <div class="card-body">
-                    <div class="d-flex align-items-center mb-3">
+                    <div class="d-flex align-items-center mb-2">
                         <div class="me-3">
                             {% if post.author.profile.image %}
-                                <img src="{{ post.author.profile.image.url }}" class="profile-img" style="width: 45px; height: 45px;">
+                                <img src="{{ post.author.profile.image.url }}" class="profile-img" style="width: 45px; height: 45px; object-fit: cover; border-radius: 50%;">
                             {% else %}
-                                <div class="bg-secondary profile-img" style="width: 45px; height: 45px;"></div>
+                                <div class="bg-secondary" style="width: 45px; height: 45px; border-radius: 50%;"></div>
                             {% endif %}
                         </div>
-                        <div>
+                        <div class="flex-grow-1">
                             <a href="{% url 'sns:user_posts' post.author.username %}" class="fw-bold text-decoration-none">@{{ post.author.username }}</a>
-                            <div class="text-muted small">{{ post.created_at|date:"Y/m/d H:i" }}</div>
+                            {% if post.author.profile.bio %}
+                                <small class="text-muted d-block">{{ post.author.profile.bio }}</small>
+                            {% endif %}
                         </div>
+                        
+                        {% if post.author == user %}
+                        <form action="{% url 'sns:delete' post.pk %}" method="POST" class="ms-2">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger border-0" onclick="return confirm('削除しますか？')">🗑️</button>
+                        </form>
+                        {% endif %}
                     </div>
                     <p class="card-text fs-5">{{ post.content }}</p>
+                    <small class="text-muted">{{ post.created_at|date:"Y/m/d H:i" }}</small>
                 </div>
             </div>
             {% endfor %}

@@ -95,7 +95,7 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Redirect settings
 LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = 'sns:index'  # ログアウトしたらトップページに戻る
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

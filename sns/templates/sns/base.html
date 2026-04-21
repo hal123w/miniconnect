@@ -8,19 +8,23 @@
     <style>
         body { background-color: #f0f2f5; }
         .navbar { background-color: #007bff; }
-        .profile-img { object-fit: cover; border-radius: 50%; }
     </style>
 </head>
 <body>
     <nav class="navbar navbar-dark shadow-sm mb-4">
         <div class="container">
             <a class="navbar-brand fw-bold" href="{% url 'sns:index' %}">MiniConnect</a>
-            <div class="navbar-nav ms-auto flex-row">
-                <a class="nav-link text-white me-3" href="{% url 'sns:profile_edit' %}">プロフィール編集</a>
-                <form action="{% url 'logout' %}" method="post" style="display: inline;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-outline-light btn-sm">ログアウト</button>
-                </form>
+            <div class="navbar-nav ms-auto flex-row align-items-center">
+                {% if user.is_authenticated %}
+                    <a class="nav-link text-white me-3" href="{% url 'sns:profile_edit' %}">設定</a>
+                    <form action="{% url 'logout' %}" method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-light btn-sm">ログアウト</button>
+                    </form>
+                {% else %}
+                    <a class="btn btn-outline-light btn-sm" href="{% url 'login' %}">ログイン</a>
+                    <a class="btn btn-light btn-sm ms-2" href="{% url 'sns:signup' %}">新規登録</a>
+                {% endif %}
             </div>
         </div>
     </nav>
