@@ -3,8 +3,6 @@ from django.urls import path, include
 from django.conf import settings # 追加
 from django.conf.urls.static import static # 追加
 
-app_name = 'sns'
-
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('sns.urls')),
