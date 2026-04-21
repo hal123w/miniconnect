@@ -5,7 +5,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.mixins import LoginRequiredMixin  # 鍵を追加
 from django.contrib.auth.decorators import login_required  # 鍵を追加
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from .models import Post
 from .forms import PostForm
 
@@ -64,6 +64,13 @@ def like_post(request, pk):
     post = get_object_or_404(Post, pk=pk)
     if request.user in post.liked_by.all():
         post.liked_by.remove(request.user)
+        liked = False
     else:
         post.liked_by.add(request.user)
-    return HttpResponseRedirect(request.META.get('HTTP_REFERER', reverse('sns:index')))
+        liked = True
+    
+    # リダイレクトではなく、データを辞書形式で返す
+    return JsonResponse({
+        'liked': liked,
+        'count': post.liked_by.count(),
+    })

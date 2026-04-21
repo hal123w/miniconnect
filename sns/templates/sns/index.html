@@ -82,11 +82,15 @@
                         <p class="card-text fs-5" style="white-space: pre-wrap;">{{ post.content }}</p>
 
                         <div class="d-flex align-items-center mt-3">
-                            <a href="{% url 'sns:like_post' post.pk %}" class="text-decoration-none me-3">
+                            <a href="javascript:void(0);" 
+                               class="like-button text-decoration-none me-3" 
+                               data-id="{{ post.pk }}">
                                 {% if user in post.liked_by.all %}
-                                    <i class="bi bi-heart-fill text-danger"></i> {% else %}
-                                    <i class="bi bi-heart text-secondary"></i> {% endif %}
-                                <span class="text-muted small">{{ post.liked_by.count }}</span>
+                                    <i class="bi bi-heart-fill text-danger"></i>
+                                {% else %}
+                                    <i class="bi bi-heart text-secondary"></i>
+                                {% endif %}
+                                <span class="like-count text-muted small">{{ post.liked_by.count }}</span>
                             </a>
                         </div>
                     </div>
@@ -100,5 +104,41 @@
             </div>
         </div>
     </div>
+
+    <script>
+    document.querySelectorAll('.like-button').forEach(button => {
+        button.addEventListener('click', function() {
+            const postId = this.dataset.id;
+            const icon = this.querySelector('i');
+            const countSpan = this.querySelector('.like-count');
+
+            // サーバーに「いいね」をリクエスト
+            fetch(`/like/${postId}/`, {
+                method: 'GET',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(response => {
+                if (!response.ok) { throw new Error('Network response was not ok'); }
+                return response.json();
+            })
+            .then(data => {
+                // ハートのアイコンと色を切り替え
+                if (data.liked) {
+                    icon.classList.remove('bi-heart', 'text-secondary');
+                    icon.classList.add('bi-heart-fill', 'text-danger');
+                } else {
+                    icon.classList.remove('bi-heart-fill', 'text-danger');
+                    icon.classList.add('bi-heart', 'text-secondary');
+                }
+                // 数字を更新
+                countSpan.textContent = data.count;
+            })
+            .catch(error => {
+                // ログインしていない場合などはエラーになるので、ログイン画面へ飛ばす
+                window.location.href = '/login/';
+            });
+        });
+    });
+    </script>
 </body>
 </html>
