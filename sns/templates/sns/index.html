@@ -67,7 +67,7 @@
                             <a href="{% url 'sns:user_posts' post.author.username %}" class="fw-bold text-primary text-decoration-none">
                                 @{{ post.author.username }}
                             </a>
-                            <span class="ms-auto small text-muted">{{ post.created_at|date:"n/j H:i" }}</span>
+                            <span class="ms-auto small text-muted">{{ post.created_at|timesince }}前</span>
                             
                             {% if post.author == user %}
                             <form action="{% url 'sns:delete' post.pk %}" method="post" class="ms-2">
