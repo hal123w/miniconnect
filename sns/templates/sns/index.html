@@ -1,104 +1,40 @@
 {% extends "sns/base.html" %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row justify-content-center mb-5">
+<div class="container">
+    <div class="row justify-content-center">
         <div class="col-md-8">
-            <div class="card shadow-sm">
+            <div class="card shadow-sm mb-4">
                 <div class="card-body">
                     <form method="POST" action="{% url 'sns:create' %}">
                         {% csrf_token %}
                         {{ form.content }}
-                        <div class="d-flex justify-content-end mt-2">
-                            <button type="submit" class="btn btn-primary px-4 shadow-sm">投稿する</button>
-                        </div>
+                        <button type="submit" class="btn btn-primary float-end mt-2">投稿する</button>
                     </form>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <div class="row justify-content-center">
-        <div class="col-md-8">
             {% for post in posts %}
-                <div class="card mb-4 shadow-sm border-0">
-                    <div class="card-header bg-white d-flex align-items-center py-3">
+            <div class="card mb-3 shadow-sm border-0">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-3">
                         <div class="me-3">
-                            {% if post.author.profile.image and post.author.profile.image.url %}
-                                <img src="{{ post.author.profile.image.url }}" class="rounded-circle border" style="width: 48px; height: 48px; object-fit: cover;" onerror="this.style.display='none'">
+                            {% if post.author.profile.image %}
+                                <img src="{{ post.author.profile.image.url }}" class="profile-img" style="width: 45px; height: 45px;">
                             {% else %}
-                                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center border" style="width: 48px; height: 48px;">
-                                    <span class="text-secondary" style="font-size: 20px;">👤</span>
-                                </div>
+                                <div class="bg-secondary profile-img" style="width: 45px; height: 45px;"></div>
                             {% endif %}
                         </div>
-
                         <div>
-                            <a href="{% url 'sns:user_posts' post.author.username %}" class="fw-bold text-dark text-decoration-none">
-                                @{{ post.author.username }}
-                            </a>
-                            <div class="text-muted" style="font-size: 0.85rem;">
-                                {{ post.created_at|date:"Y/m/d H:i" }}
-                            </div>
+                            <a href="{% url 'sns:user_posts' post.author.username %}" class="fw-bold text-decoration-none">@{{ post.author.username }}</a>
+                            <div class="text-muted small">{{ post.created_at|date:"Y/m/d H:i" }}</div>
                         </div>
-
-                        {% if post.author == user %}
-                        <div class="ms-auto">
-                            <form action="{% url 'sns:delete' post.pk %}" method="POST" style="display:inline;">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-link text-danger p-0" onclick="return confirm('本当に削除しますか？')">
-                                    🗑️
-                                </button>
-                            </form>
-                        </div>
-                        {% endif %}
                     </div>
-
-                    <div class="card-body py-3">
-                        <p class="card-text" style="white-space: pre-wrap; font-size: 1.1rem;">{{ post.content }}</p>
-                    </div>
-
-                    <div class="card-footer bg-white border-top-0 pb-3">
-                        <button class="btn btn-outline-danger btn-sm rounded-pill px-3 like-button" data-post-id="{{ post.pk }}">
-                            {% if user in post.liked_by.all %}
-                                ❤️
-                            {% else %}
-                                ♡
-                            {% endif %}
-                            <span class="like-count">{{ post.liked_by.count }}</span>
-                        </button>
-                    </div>
+                    <p class="card-text fs-5">{{ post.content }}</p>
                 </div>
-            {% empty %}
-                <div class="text-center py-5">
-                    <p class="text-muted">まだ投稿がありません。</p>
-                </div>
+            </div>
             {% endfor %}
         </div>
     </div>
 </div>
-
-<script>
-document.querySelectorAll('.like-button').forEach(button => {
-    button.addEventListener('click', function() {
-        const postId = this.dataset.postId;
-        fetch(`/post/${postId}/like/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': '{{ csrf_token }}',
-                'Content-Type': 'application/json',
-            },
-        })
-        .then(response => response.json())
-        .then(data => {
-            this.querySelector('.like-count').textContent = data.count;
-            if (data.liked) {
-                this.innerHTML = `❤️ <span class="like-count">${data.count}</span>`;
-            } else {
-                this.innerHTML = `♡ <span class="like-count">${data.count}</span>`;
-            }
-        });
-    });
-});
-</script>
 {% endblock %}
