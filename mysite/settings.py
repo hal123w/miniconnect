@@ -106,22 +106,21 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # --- settings.py の一番最後 ---
 
-# 1. Cloudinaryを使うためのアプリを登録（ここが漏れると動きません）
-if 'cloudinary_storage' not in INSTALLED_APPS:
-    INSTALLED_APPS += [
-        'cloudinary_storage',
-        'cloudinary',
-    ]
-
-# 2. Cloudinaryの接続設定
+# Cloudinaryの接続設定（API Secretはご自身のものに！）
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': 'dbhu45a5z',
-    'API_KEY': '893623692642876', 
+    'API_KEY': '893623692642876',
     'API_SECRET': 'QsxeqrPQYYbqo3_12pE13F00YsU',
 }
 
-# 3. 保存先をCloudinaryに指定（ここがスイッチになります）
+# 【重要】Djangoに「画像保存のメインはCloudinaryだ！」と強制する設定
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
-# メディアURLの設定
+# INSTALLED_APPS にこれらが確実に入っていることを保証する
+if 'cloudinary_storage' not in INSTALLED_APPS:
+    # 順番が大事：cloudinary_storage は一番上が好ましいです
+    INSTALLED_APPS.insert(0, 'cloudinary_storage')
+    INSTALLED_APPS += ['cloudinary']
+
+# メディアURLの設定（これはそのまま）
 MEDIA_URL = '/media/'
