@@ -101,26 +101,31 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_URL = 'login'
 
-MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # --- settings.py の一番最後 ---
 
-# Cloudinaryの接続設定（API Secretはご自身のものに！）
+# Cloudinaryの設定
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': 'dbhu45a5z',
     'API_KEY': '893623692642876',
-    'API_SECRET': 'QsxeqrPQYYbqo3_12pE13F00YsU',
+    'API_SECRET': 'QsxeqrPQYYbqo3_12pE13F00YsU', # ←ここだけ注意！
 }
 
-# 【重要】Djangoに「画像保存のメインはCloudinaryだ！」と強制する設定
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+# Django最新版(4.2以降)で推奨される保存先の設定
+STORAGES = {
+    "default": {
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
-# INSTALLED_APPS にこれらが確実に入っていることを保証する
+# メディアURL
+MEDIA_URL = '/media/'
+
+# 念のためINSTALLED_APPSに強制追加するおまじない
 if 'cloudinary_storage' not in INSTALLED_APPS:
-    # 順番が大事：cloudinary_storage は一番上が好ましいです
     INSTALLED_APPS.insert(0, 'cloudinary_storage')
     INSTALLED_APPS += ['cloudinary']
-
-# メディアURLの設定（これはそのまま）
-MEDIA_URL = '/media/'
