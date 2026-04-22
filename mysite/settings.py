@@ -103,3 +103,23 @@ LOGIN_URL = 'login'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# --- settings.py の一番最後に追加 ---
+
+INSTALLED_APPS += [
+    'cloudinary_storage',
+    'cloudinary',
+]
+
+# Cloudinaryの設定（View API Keysボタンで確認した値を入れ替えてください）
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': 'dbhu45a5z', # スクリーンショット左上に書いてあるこれですね！
+    'API_KEY': '893623692642876',
+    'API_SECRET': 'QsxeqrPQYYbqo3_12pE13F00YsU',
+}
+
+# 画像の保存先をCloudinaryに切り替える
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+# これまでの MEDIA 設定はそのまま残すか、以下に書き換え
+MEDIA_URL = '/media/'
