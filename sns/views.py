@@ -1,11 +1,11 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, CreateView, DeleteView
-from django.urls import reverse_lazy, reverse
+from django.urls import reverse_lazy
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import JsonResponse
 from django.contrib import messages
 from .models import Post, Profile
 from .forms import PostForm, UserUpdateForm, ProfileUpdateForm
@@ -19,10 +19,9 @@ class PostListView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['form'] = PostForm()
-        # ログインしている場合、自分のプロフィールがあるか確認（安全策）
+        # ログイン時にプロフィールがなければ作成する安全策
         if self.request.user.is_authenticated:
-            if not hasattr(self.request.user, 'profile'):
-                Profile.objects.create(user=self.request.user)
+            Profile.objects.get_or_create(user=self.request.user)
         return context
 
 class PostCreateView(LoginRequiredMixin, CreateView):
@@ -54,9 +53,7 @@ class UserProfileView(ListView):
 
     def get_queryset(self):
         self.user_obj = get_object_or_404(User, username=self.kwargs['username'])
-        # プロフィールがないユーザーを表示する場合の安全策
-        if not hasattr(self.user_obj, 'profile'):
-            Profile.objects.create(user=self.user_obj)
+        Profile.objects.get_or_create(user=self.user_obj)
         return Post.objects.filter(author=self.user_obj).order_by('-created_at')
 
     def get_context_data(self, **kwargs):
@@ -73,18 +70,15 @@ def like_post(request, pk):
     else:
         post.liked_by.add(request.user)
         liked = True
-    
-    return JsonResponse({
-        'liked': liked,
-        'count': post.liked_by.count(),
-    })
+    return JsonResponse({'liked': liked, 'count': post.liked_by.count()})
 
 @login_required
 def profile_edit(request):
-    if not hasattr(request.user, 'profile'):
-        Profile.objects.create(user=request.user)
-        
+    # プロフィールの存在を確認
+    profile, created = Profile.objects.get_or_create(user=request.user)
+    
     if request.method == 'POST':
+        # ここが重要！ request.FILES を渡すことで画像を受け取れます
         u_form = UserUpdateForm(request.POST, instance=request.user)
         p_form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user.profile)
         
@@ -92,7 +86,7 @@ def profile_edit(request):
             u_form.save()
             p_form.save()
             messages.success(request, f'アカウント情報が更新されました！')
-            return HttpResponseRedirect(reverse('sns:index'))
+            return redirect('sns:index')
     else:
         u_form = UserUpdateForm(instance=request.user)
         p_form = ProfileUpdateForm(instance=request.user.profile)
