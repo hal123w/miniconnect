@@ -31,5 +31,33 @@
 
     {% block content %}
     {% endblock %}
+
+    <script>
+    document.querySelectorAll('.like-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const postId = this.dataset.postId;
+            const heart = this.querySelector('.heart');
+            const count = this.querySelector('.like-count');
+            const btn = this;
+
+            fetch(`/like/${postId}/`, {
+                method: 'GET',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.liked) {
+                    heart.innerText = '❤️';
+                    btn.classList.replace('btn-outline-danger', 'btn-danger');
+                } else {
+                    heart.innerText = '🤍';
+                    btn.classList.replace('btn-danger', 'btn-outline-danger');
+                }
+                count.innerText = data.count;
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    });
+    </script>
 </body>
 </html>
