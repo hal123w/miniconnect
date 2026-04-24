@@ -4,38 +4,40 @@
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-md-8">
-            <div class="card shadow-sm mb-4 border-0">
-                <div class="card-body text-center py-5">
+            <div class="card shadow-sm mb-4 border-0 overflow-hidden" style="border-radius: 15px;">
+                <div style="height: 120px; background: linear-gradient(90deg, #007bff 0%, #00d4ff 100%);"></div>
+                
+                <div class="card-body text-center position-relative" style="margin-top: -60px;">
                     {% if profile_user.profile.image %}
-                        <img src="{{ profile_user.profile.image.url }}" class="rounded-circle mb-3 shadow-sm" style="width: 120px; height: 120px; object-fit: cover; border: 4px solid #fff;">
+                        <img src="{{ profile_user.profile.image.url }}" class="rounded-circle mb-3 shadow" style="width: 120px; height: 120px; object-fit: cover; border: 5px solid #fff;">
                     {% else %}
-                        <div class="bg-secondary rounded-circle mx-auto mb-3 shadow-sm" style="width: 120px; height: 120px;"></div>
+                        <div class="bg-secondary rounded-circle mx-auto mb-3 shadow" style="width: 120px; height: 120px; border: 5px solid #fff;"></div>
                     {% endif %}
                     
-                    <h3 class="fw-bold">@{{ profile_user.username }}</h3>
+                    <h3 class="fw-bold mb-0">@{{ profile_user.username }}</h3>
                     
+                    <div class="text-muted small mb-2">
+                        <span class="fw-bold text-dark">{{ post_count }}</span> 投稿
+                    </div>
+
                     {% if profile_user.profile.bio %}
                         <p class="text-muted mt-2 mx-auto" style="max-width: 500px;">{{ profile_user.profile.bio }}</p>
-                    {% else %}
-                        <p class="text-muted mt-2 small">自己紹介はまだありません。</p>
                     {% endif %}
 
                     {% if profile_user == user %}
-                        <a href="{% url 'sns:profile_edit' %}" class="btn btn-outline-primary btn-sm mt-2" style="border-radius: 20px; padding: 5px 20px;">プロフィールを編集</a>
+                        <a href="{% url 'sns:profile_edit' %}" class="btn btn-outline-primary btn-sm mt-2" style="border-radius: 20px; padding: 5px 25px;">プロフィールを編集</a>
                     {% endif %}
                 </div>
             </div>
 
-            <h5 class="mb-3 fw-bold">投稿一覧</h5>
+            <h5 class="mb-3 fw-bold">投稿</h5>
             {% for post in posts %}
-            <div class="card mb-3 shadow-sm border-0">
+            <div class="card mb-3 shadow-sm border-0" style="border-radius: 12px;">
                 <div class="card-body">
                     <p class="card-text fs-5">{{ post.content }}</p>
                     <div class="d-flex align-items-center justify-content-between">
                         <small class="text-muted">{{ post.created_at|date:"Y/m/d H:i" }}</small>
-                        <div class="d-flex align-items-center">
-                            <span class="me-2">❤️ {{ post.liked_by.count }}</span>
-                        </div>
+                        <div class="text-danger">❤️ {{ post.liked_by.count }}</div>
                     </div>
                 </div>
             </div>

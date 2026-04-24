@@ -58,6 +58,8 @@ class UserProfileView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['profile_user'] = self.user_obj
+        # 追加：投稿数を数えてコンテキストに入れる
+        context['post_count'] = self.get_queryset().count() 
         return context
 
 @login_required
