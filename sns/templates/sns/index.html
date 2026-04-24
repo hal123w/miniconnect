@@ -26,10 +26,9 @@
                             {% endif %}
                         </div>
                         <div class="flex-grow-1">
-                            <a href="{% url 'sns:user_posts' post.author.username %}" class="fw-bold text-decoration-none">@{{ post.author.username }}</a>
-                            {% if post.author.profile.bio %}
-                                <small class="text-muted d-block">{{ post.author.profile.bio }}</small>
-                            {% endif %}
+                            <a href="{% url 'sns:user_posts' post.author.username %}" class="fw-bold text-decoration-none" style="color: #333;">
+                                @{{ post.author.username }}
+                            </a>
                         </div>
                         {% if post.author == user %}
                         <form action="{% url 'sns:delete' post.pk %}" method="POST" class="ms-2">
