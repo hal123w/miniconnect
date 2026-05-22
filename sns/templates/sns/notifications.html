@@ -1,0 +1,32 @@
+{% extends "sns/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <h3 class="mb-4">通知一覧</h3>
+            <div class="list-group">
+                {% for notification in notifications %}
+                    <div class="list-group-item border-0 shadow-sm mb-2" style="border-radius: 10px;">
+                        <div class="d-flex align-items-center">
+                            <span class="me-3">
+                                {% if notification.notification_type == 'like' %}
+                                    ❤️
+                                {% endif %}
+                            </span>
+                            <div>
+                                <strong>{{ notification.sender.username }}</strong> さんが
+                                あなたの投稿に「いいね」しました。
+                                <br>
+                                <small class="text-muted">{{ notification.created_at|date:"Y/m/d H:i" }}</small>
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p class="text-center text-muted">通知はまだありません。</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

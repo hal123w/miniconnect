@@ -6,7 +6,7 @@ from .models import Post, Profile
 class PostForm(forms.ModelForm):
     class Meta:
         model = Post
-        fields = ['content']
+        fields = ['content', "image"]
         widgets = {
             'content': forms.Textarea(attrs={
                 'class': 'form-control',

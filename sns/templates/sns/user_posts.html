@@ -24,8 +24,29 @@
                         <p class="text-muted mt-2 mx-auto" style="max-width: 500px;">{{ profile_user.profile.bio }}</p>
                     {% endif %}
 
+                    <div class="d-flex justify-content-center gap-4 mb-3">
+                        <div class="text-center">
+                            <span class="fw-bold d-block">{{ profile_user.profile.following.count }}</span>
+                            <small class="text-muted">フォロー</small>
+                        </div>
+                        <div class="text-center">
+                            <span class="fw-bold d-block">{{ profile_user.profile.followers.count }}</span>
+                            <small class="text-muted">フォロワー</small>
+                        </div>
+                    </div>
                     {% if profile_user == user %}
                         <a href="{% url 'sns:profile_edit' %}" class="btn btn-outline-primary btn-sm mt-2" style="border-radius: 20px; padding: 5px 25px;">プロフィールを編集</a>
+                    {% endif %}
+
+                    {% if profile_user != user %}
+                        <form action="{% url 'sns:follow_unfollow' profile_user.username %}" method="POST">
+                            {% csrf_token %}
+                            {% if user.profile in profile_user.profile.followers.all %}
+                                <button type="submit" class="btn btn-outline-secondary btn-sm mt-2" style="border-radius: 20px; padding: 5px 25px;">フォロー解除</button>
+                            {% else %}
+                                <button type="submit" class="btn btn-primary btn-sm mt-2" style="border-radius: 20px; padding: 5px 25px;">フォローする</button>
+                            {% endif %}
+                        </form>
                     {% endif %}
                 </div>
             </div>
@@ -35,6 +56,12 @@
             <div class="card mb-3 shadow-sm border-0" style="border-radius: 12px;">
                 <div class="card-body">
                     <p class="card-text fs-5">{{ post.content }}</p>
+
+                    {% if post.image %}
+                        <div class="mt-2 text-center">
+                            <img src="{{ post.image.url }}" class="img-fluid rounded" style="max-height: 400px; object-fit: contain;">
+                        </div>
+                    {% endif %}
                     <div class="d-flex align-items-center justify-content-between">
                         <small class="text-muted">{{ post.created_at|date:"Y/m/d H:i" }}</small>
                         <div class="text-danger">❤️ {{ post.liked_by.count }}</div>

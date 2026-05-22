@@ -1,99 +1,112 @@
-from django.shortcuts import render, get_object_or_404, redirect
-from django.views.generic import ListView, CreateView, DeleteView
-from django.urls import reverse_lazy
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.models import User
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.generic import ListView, CreateView, DeleteView, DetailView, TemplateView
+from django.urls import reverse_lazy
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from django.contrib import messages
-from .models import Post, Profile
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.models import User
+from .models import Post, Notification, Profile
 from .forms import PostForm, UserUpdateForm, ProfileUpdateForm
+from django.contrib.auth.forms import UserCreationForm
 
-class PostListView(ListView):
+# --- 投稿一覧 ---
+class PostListView(LoginRequiredMixin, ListView):
     model = Post
     template_name = 'sns/index.html'
     context_object_name = 'posts'
     ordering = ['-created_at']
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['form'] = PostForm()
-        # ログイン時にプロフィールがなければ作成する安全策
-        if self.request.user.is_authenticated:
-            Profile.objects.get_or_create(user=self.request.user)
-        return context
-
+# --- 新規投稿 ---
 class PostCreateView(LoginRequiredMixin, CreateView):
     model = Post
-    form_class = PostForm
-    template_name = 'sns/index.html'
+    fields = ['content', 'image']
+    template_name = 'sns/post_form.html'
     success_url = reverse_lazy('sns:index')
 
     def form_valid(self, form):
-        form.instance.author = self.request.user
+        form.instance.author = self.request.user  # authorを使用
         return super().form_valid(form)
 
+# --- 投稿削除 ---
 class PostDeleteView(LoginRequiredMixin, DeleteView):
     model = Post
     success_url = reverse_lazy('sns:index')
 
-    def get_queryset(self):
-        return self.model.objects.filter(author=self.request.user)
-
-class SignUpView(CreateView):
-    form_class = UserCreationForm
-    success_url = reverse_lazy('login')
-    template_name = 'registration/signup.html'
-
-class UserProfileView(ListView):
-    model = Post
+# --- ユーザープロフィール/投稿一覧 ---
+class UserProfileView(LoginRequiredMixin, DetailView):
+    model = User
     template_name = 'sns/user_posts.html'
-    context_object_name = 'posts'
-
-    def get_queryset(self):
-        self.user_obj = get_object_or_404(User, username=self.kwargs['username'])
-        return Post.objects.filter(author=self.user_obj).order_by('-created_at')
+    slug_field = 'username'
+    slug_url_kwarg = 'username'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['profile_user'] = self.user_obj
-        # 追加：投稿数を数えてコンテキストに入れる
-        context['post_count'] = self.get_queryset().count() 
+        user = self.get_object()
+        context['user_posts'] = Post.objects.filter(author=user).order_by('-created_at')
         return context
 
+# --- サインアップ ---
+class SignUpView(CreateView):
+    form_class = UserCreationForm
+    template_name = 'sns/registration/signup.html'
+    success_url = reverse_lazy('sns:login')
+
+# --- プロフィール編集 ---
+@login_required
+def profile_edit(request):
+    profile, created = Profile.objects.get_or_create(user=request.user)
+    if request.method == 'POST':
+        form = ProfileUpdateForm(request.POST, request.FILES, instance=profile)
+        if form.is_valid():
+            form.save()
+            return redirect('sns:index')
+    else:
+        form = ProfileUpdateForm(instance=profile)
+    return render(request, 'sns/profile_edit.html', {'form': form})
+
+# --- 【重要】いいね機能（非同期対応版） ---
+@csrf_exempt
 @login_required
 def like_post(request, pk):
     post = get_object_or_404(Post, pk=pk)
+    print(f"--- 判定前: {request.user.username} はこの投稿が好き？ {request.user in post.liked_by.all()}")
+    
     if request.user in post.liked_by.all():
         post.liked_by.remove(request.user)
-        liked = False
+        is_liked = False
     else:
         post.liked_by.add(request.user)
-        liked = True
-    return JsonResponse({'liked': liked, 'count': post.liked_by.count()})
-
-@login_required
-def profile_edit(request):
-    # プロフィールの存在を確認
-    profile, created = Profile.objects.get_or_create(user=request.user)
+        is_liked = True
     
-    if request.method == 'POST':
-        # ここが重要！ request.FILES を渡すことで画像を受け取れます
-        u_form = UserUpdateForm(request.POST, instance=request.user)
-        p_form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user.profile)
-        
-        if u_form.is_valid() and p_form.is_valid():
-            u_form.save()
-            p_form.save()
-            messages.success(request, f'アカウント情報が更新されました！')
-            return redirect('sns:index')
-    else:
-        u_form = UserUpdateForm(instance=request.user)
-        p_form = ProfileUpdateForm(instance=request.user.profile)
+    print(f"--- 判定後: is_likedは {is_liked} になりました。カウントは {post.liked_by.count()}")
+    
+    return JsonResponse({
+        'is_liked': is_liked,
+        'like_count': post.liked_by.count(),
+    })
 
-    context = {
-        'u_form': u_form,
-        'p_form': p_form
-    }
-    return render(request, 'sns/profile_edit.html', context)
+# --- フォロー機能 ---
+@login_required
+def follow_unfollow(request, username):
+    target_user = get_object_or_404(User, username=username)
+    if request.user != target_user:
+        if target_user in request.user.profile.following.all():
+            request.user.profile.following.remove(target_user)
+        else:
+            request.user.profile.following.add(target_user)
+    return redirect('sns:user_posts', username=username)
+
+# --- 通知一覧 ---
+@login_required
+def notification_list(request):
+    notifications = Notification.objects.filter(recipient=request.user).order_by('-created_at')
+    return render(request, 'sns/notifications.html', {'notifications': notifications})
+
+# --- アカウント削除 ---
+@login_required
+def account_delete(request):
+    if request.method == 'POST':
+        request.user.delete()
+        return redirect('sns:signup')
+    return render(request, 'sns/account_delete_confirm.html')
