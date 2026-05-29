@@ -37,13 +37,16 @@ class PostDeleteView(LoginRequiredMixin, DeleteView):
 class UserProfileView(LoginRequiredMixin, DetailView):
     model = User
     template_name = 'sns/user_posts.html'
+    context_object_name = 'profile_user'
     slug_field = 'username'
     slug_url_kwarg = 'username'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        user = self.get_object()
-        context['user_posts'] = Post.objects.filter(author=user).order_by('-created_at')
+        profile_user = self.get_object()
+        posts = Post.objects.filter(author=profile_user).order_by('-created_at')
+        context['posts'] = posts
+        context['post_count'] = posts.count()
         return context
 
 # --- サインアップ ---
