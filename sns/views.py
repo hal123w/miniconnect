@@ -33,6 +33,9 @@ class PostDeleteView(LoginRequiredMixin, DeleteView):
     model = Post
     success_url = reverse_lazy('sns:index')
 
+    def get_queryset(self):
+        return Post.objects.filter(author=self.request.user)
+
 # --- ユーザープロフィール/投稿一覧 ---
 class UserProfileView(LoginRequiredMixin, DetailView):
     model = User
