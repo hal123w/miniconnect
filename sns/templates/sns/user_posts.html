@@ -64,7 +64,15 @@
                     {% endif %}
                     <div class="d-flex align-items-center justify-content-between">
                         <small class="text-muted">{{ post.created_at|date:"Y/m/d H:i" }}</small>
-                        <div class="text-danger">❤️ {{ post.liked_by.count }}</div>
+                        <div class="d-flex align-items-center gap-2">
+                            {% if post.author == user %}
+                                <form method="post" action="{% url 'sns:delete' post.pk %}" class="d-inline" onsubmit="return confirm('この投稿を削除しますか？');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">削除</button>
+                                </form>
+                            {% endif %}
+                            <div class="text-danger">❤️ {{ post.liked_by.count }}</div>
+                        </div>
                     </div>
                 </div>
             </div>
