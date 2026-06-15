@@ -107,9 +107,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Cloudinaryの設定
 CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': 'dbhu45a5z',
-    'API_KEY': '893623692642876',
-    'API_SECRET': 'QsxeqrPQYYbqo3_12pE13F00YsU', # ←ここだけ注意！
+    'CLOUD_NAME': env('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': env('CLOUDINARY_API_KEY'),
+    'API_SECRET': env('CLOUDINARY_API_SECRET'),
 }
 
 # Django最新版(4.2以降)で推奨される保存先の設定

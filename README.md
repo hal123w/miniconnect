@@ -59,6 +59,9 @@ pip install -r requirements.txt
 SECRET_KEY=
 DEBUG=True
 ALLOWED_HOSTS=127.0.0.1,localhost
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
 ```
 
 ### 4-5. データベースの準備
@@ -91,10 +94,13 @@ python manage.py createsuperuser
 | `DEBUG` | デバッグモード | `True` | `False` |
 | `ALLOWED_HOSTS` | 許可するホスト名 | `127.0.0.1,localhost` | 本番ドメイン（例: `*.onrender.com`） |
 | `DATABASE_URL` | DB 接続 | 未設定なら SQLite | Render PostgreSQL の URL |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary クラウド名 | `.env` | Environment に設定 |
+| `CLOUDINARY_API_KEY` | Cloudinary API キー | `.env` | Environment に設定 |
+| `CLOUDINARY_API_SECRET` | Cloudinary API シークレット | `.env` | Environment に設定 |
 
 **注意:** `.env` の中身（実際の値）は Git に commit しないこと。
 
-Cloudinary を使う場合は、Render の Environment に API キー類を設定し、`settings.py` への直書きは避けることを推奨します。
+Cloudinary の値は [Cloudinary Dashboard](https://cloudinary.com) から取得します。
 
 ## 6. 本番デプロイ（Render）概要
 
@@ -109,5 +115,4 @@ push していない commit は本番に反映されません。
 ## 7. 既知の制限・今後の改善
 
 - いいね API の CSRF / HTTP メソッドの見直し
-- Cloudinary 設定の環境変数化
 - 自動テストの追加
