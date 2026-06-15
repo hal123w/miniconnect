@@ -7,16 +7,41 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
+from django.db.models import Q
 
 from .models import Post, Notification, Profile
 from .forms import PostForm, UserUpdateForm, ProfileUpdateForm
+from .utils import sync_post_tags
 
 # --- 投稿一覧 ---
+# タブ「フォロー中」: 自分 + フォロー中ユーザーの投稿
+# タブ「みんな」: 自分以外かつ未フォローユーザーの投稿
 class PostListView(LoginRequiredMixin, ListView):
     model = Post
     template_name = 'sns/index.html'
     context_object_name = 'posts'
-    ordering = ['-created_at']
+
+    def get_queryset(self):
+        user = self.request.user
+        tab = self.request.GET.get('tab', 'following')
+        followed_user_ids = User.objects.filter(
+            profile__in=user.profile.following.all()
+        ).values_list('pk', flat=True)
+
+        if tab == 'everyone':
+            return Post.objects.exclude(
+                author=user
+            ).exclude(
+                author_id__in=followed_user_ids
+            ).order_by('-created_at')
+
+        author_ids = list(followed_user_ids) + [user.pk]
+        return Post.objects.filter(author_id__in=author_ids).order_by('-created_at')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['active_tab'] = self.request.GET.get('tab', 'following')
+        return context
 
 # --- 新規投稿 ---
 class PostCreateView(LoginRequiredMixin, CreateView):
@@ -27,7 +52,9 @@ class PostCreateView(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         form.instance.author = self.request.user
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        sync_post_tags(self.object)
+        return response
 
 # --- 投稿削除 ---
 class PostDeleteView(LoginRequiredMixin, DeleteView):
@@ -120,6 +147,26 @@ def follow_unfollow(request, username):
                 notification_type='follow',
             )
     return redirect('sns:user_posts', username=username)
+
+# --- 検索 ---
+@login_required
+def search(request):
+    q = request.GET.get('q', '').strip()
+    posts = Post.objects.none()
+    users = User.objects.none()
+
+    if q:
+        tag_name = q.lstrip('#').lower()
+        posts = Post.objects.filter(
+            Q(content__icontains=q) | Q(tags__name=tag_name)
+        ).distinct().order_by('-created_at')
+        users = User.objects.filter(username__icontains=q).order_by('username')
+
+    return render(request, 'sns/search.html', {
+        'q': q,
+        'posts': posts,
+        'users': users,
+    })
 
 # --- 通知一覧 ---
 @login_required

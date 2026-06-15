@@ -10,7 +10,7 @@ class PostForm(forms.ModelForm):
         widgets = {
             'content': forms.Textarea(attrs={
                 'class': 'form-control',
-                'placeholder': '今何してる？（140文字以内）',
+                'placeholder': '今何してる？（140文字以内） #django のようにタグ付け可',
                 'rows': 3,
             }),
         }

@@ -33,4 +33,5 @@ urlpatterns = [
     path('user/<str:username>/follow/', views.follow_unfollow, name='follow_unfollow'),
     path('account/delete/', views.account_delete, name='account_delete'),
     path('notifications/', views.notification_list, name='notifications'),
+    path('search/', views.search, name='search'),
 ]

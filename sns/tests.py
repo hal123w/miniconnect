@@ -153,3 +153,59 @@ class NotificationListViewTests(TestCase):
         response = self.client.get(reverse('sns:notifications'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'sender')
+
+
+class HashtagTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='tagger', password='testpass123')
+
+    def test_post_create_extracts_hashtags(self):
+        self.client.login(username='tagger', password='testpass123')
+        self.client.post(reverse('sns:create'), {'content': 'hello #Django world #django'})
+        post = Post.objects.get(author=self.user)
+        tag_names = set(post.tags.values_list('name', flat=True))
+        self.assertEqual(tag_names, {'django'})
+
+
+class TimelineSplitTests(TestCase):
+    def setUp(self):
+        self.me = User.objects.create_user(username='me', password='testpass123')
+        self.followed = User.objects.create_user(username='followed', password='testpass123')
+        self.stranger = User.objects.create_user(username='stranger', password='testpass123')
+        self.me.profile.following.add(self.followed.profile)
+        Post.objects.create(author=self.me, content='my post')
+        Post.objects.create(author=self.followed, content='followed post')
+        Post.objects.create(author=self.stranger, content='stranger post')
+
+    def test_following_tab_shows_self_and_followed(self):
+        self.client.login(username='me', password='testpass123')
+        response = self.client.get(reverse('sns:index') + '?tab=following')
+        self.assertContains(response, 'my post')
+        self.assertContains(response, 'followed post')
+        self.assertNotContains(response, 'stranger post')
+
+    def test_everyone_tab_shows_unfollowed_only(self):
+        self.client.login(username='me', password='testpass123')
+        response = self.client.get(reverse('sns:index') + '?tab=everyone')
+        self.assertContains(response, 'stranger post')
+        self.assertNotContains(response, 'my post')
+        self.assertNotContains(response, 'followed post')
+
+
+class SearchViewTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='findme', password='testpass123')
+        self.other = User.objects.create_user(username='other', password='testpass123')
+        self.post = Post.objects.create(author=self.other, content='learning #django today')
+
+    def test_search_finds_post_by_tag_without_hash(self):
+        from sns.utils import sync_post_tags
+        sync_post_tags(self.post)
+        self.client.login(username='findme', password='testpass123')
+        response = self.client.get(reverse('sns:search'), {'q': 'django'})
+        self.assertContains(response, 'learning #django today')
+
+    def test_search_finds_user_by_username(self):
+        self.client.login(username='findme', password='testpass123')
+        response = self.client.get(reverse('sns:search'), {'q': 'find'})
+        self.assertContains(response, 'findme')

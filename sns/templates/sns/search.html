@@ -4,30 +4,36 @@
 <div class="container mt-4">
     <div class="row justify-content-center">
         <div class="col-md-8">
-            <div class="d-flex justify-content-end mb-3">
-                <a href="{% url 'sns:create' %}" class="btn btn-primary">新規投稿</a>
-            </div>
+            <h3 class="mb-4">検索</h3>
 
-            <ul class="nav nav-tabs mb-4">
-                <li class="nav-item">
-                    <a class="nav-link {% if active_tab != 'everyone' %}active{% endif %}"
-                       href="{% url 'sns:index' %}?tab=following">フォロー中</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if active_tab == 'everyone' %}active{% endif %}"
-                       href="{% url 'sns:index' %}?tab=everyone">みんな</a>
-                </li>
-            </ul>
+            <form method="get" action="{% url 'sns:search' %}" class="mb-4">
+                <div class="input-group">
+                    <input type="search" name="q" value="{{ q }}" class="form-control"
+                           placeholder="投稿・ユーザー・#タグを検索">
+                    <button type="submit" class="btn btn-primary">検索</button>
+                </div>
+            </form>
 
-            {% for post in posts %}
-                {% include "sns/_post_card.html" %}
-            {% empty %}
-                {% if active_tab == 'everyone' %}
-                    <p class="text-center text-muted">未フォローユーザーの投稿はまだありません。</p>
-                {% else %}
-                    <p class="text-center text-muted">フォロー中の投稿はまだありません。</p>
-                {% endif %}
-            {% endfor %}
+            {% if q %}
+                <h5 class="mb-3">投稿</h5>
+                {% for post in posts %}
+                    {% include "sns/_post_card.html" %}
+                {% empty %}
+                    <p class="text-muted">該当する投稿はありません。</p>
+                {% endfor %}
+
+                <h5 class="mb-3 mt-4">ユーザー</h5>
+                <div class="list-group mb-4">
+                    {% for u in users %}
+                        <a href="{% url 'sns:user_posts' u.username %}"
+                           class="list-group-item list-group-item-action">
+                            @{{ u.username }}
+                        </a>
+                    {% empty %}
+                        <p class="text-muted">該当するユーザーはありません。</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -48,7 +54,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.ajax-like-btn').forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
-
             const url = this.getAttribute('data-url');
             const btn = this;
             const csrfToken = getCookie('csrftoken');
@@ -64,7 +69,6 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 const heartSpan = btn.querySelector('.heart');
                 const countSpan = btn.querySelector('.like-count');
-
                 if (data.is_liked) {
                     btn.classList.remove('btn-outline-danger');
                     btn.classList.add('btn-danger');

@@ -10,9 +10,17 @@ class Post(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     liked_by = models.ManyToManyField(User, related_name='liked_posts', blank=True)
+    tags = models.ManyToManyField('Tag', related_name='posts', blank=True)
 
     def __str__(self):
         return f'{self.author.username} - {self.content[:10]}'
+
+
+class Tag(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+
+    def __str__(self):
+        return f'#{self.name}'
 
 
 class Profile(models.Model):
