@@ -36,3 +36,31 @@ class PostDeleteViewTests(TestCase):
         response = self.client.post(reverse('sns:delete', args=[self.post.pk]))
         self.assertEqual(response.status_code, 404)
         self.assertTrue(Post.objects.filter(pk=self.post.pk).exists())
+
+
+class LikePostViewTests(TestCase):
+    def setUp(self):
+        self.author = User.objects.create_user(username='author', password='testpass123')
+        self.liker = User.objects.create_user(username='liker', password='testpass123')
+        self.post = Post.objects.create(author=self.author, content='like me')
+
+    def test_post_toggles_like(self):
+        self.client.login(username='liker', password='testpass123')
+        url = reverse('sns:like_post', args=[self.post.pk])
+
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data['is_liked'])
+        self.assertEqual(data['like_count'], 1)
+
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertFalse(data['is_liked'])
+        self.assertEqual(data['like_count'], 0)
+
+    def test_get_is_not_allowed(self):
+        self.client.login(username='liker', password='testpass123')
+        response = self.client.get(reverse('sns:like_post', args=[self.post.pk]))
+        self.assertEqual(response.status_code, 405)

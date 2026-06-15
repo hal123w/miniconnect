@@ -4,7 +4,7 @@ from django.views.generic import ListView, CreateView, DeleteView, DetailView, T
 from django.urls import reverse_lazy
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from django.contrib.auth.models import User
 from .models import Post, Notification, Profile
 from .forms import PostForm, UserUpdateForm, ProfileUpdateForm
@@ -71,22 +71,19 @@ def profile_edit(request):
         form = ProfileUpdateForm(instance=profile)
     return render(request, 'sns/profile_edit.html', {'form': form})
 
-# --- 【重要】いいね機能（非同期対応版） ---
-@csrf_exempt
+# --- いいね機能（非同期対応版） ---
 @login_required
+@require_POST
 def like_post(request, pk):
     post = get_object_or_404(Post, pk=pk)
-    print(f"--- 判定前: {request.user.username} はこの投稿が好き？ {request.user in post.liked_by.all()}")
-    
+
     if request.user in post.liked_by.all():
         post.liked_by.remove(request.user)
         is_liked = False
     else:
         post.liked_by.add(request.user)
         is_liked = True
-    
-    print(f"--- 判定後: is_likedは {is_liked} になりました。カウントは {post.liked_by.count()}")
-    
+
     return JsonResponse({
         'is_liked': is_liked,
         'like_count': post.liked_by.count(),

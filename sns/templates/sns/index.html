@@ -60,19 +60,31 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // ページ内の「ajax-like-btn」というクラスがついたボタンをすべて探す
+    function getCookie(name) {
+        const cookies = document.cookie ? document.cookie.split(';') : [];
+        for (const cookie of cookies) {
+            const trimmed = cookie.trim();
+            if (trimmed.startsWith(name + '=')) {
+                return decodeURIComponent(trimmed.substring(name.length + 1));
+            }
+        }
+        return null;
+    }
+
     document.querySelectorAll('.ajax-like-btn').forEach(button => {
         button.addEventListener('click', function(e) {
-            // ボタン本来の動き（フォーム送信など）を念のため止める
             e.preventDefault();
-            
-            // 【ここがポイント！】aタグのhrefではなく、buttonのdata-urlを読み取る
+
             const url = this.getAttribute('data-url');
             const btn = this;
+            const csrfToken = getCookie('csrftoken');
 
             fetch(url, {
-                method: 'GET',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
             })
             .then(response => response.json())
             .then(data => {
