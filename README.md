@@ -45,17 +45,11 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 ### 4-3. 依存パッケージのインストール
 
-`requirements.txt` が無い場合は、最低限次をインストールします。
-
 ```powershell
-pip install django django-environ dj-database-url whitenoise cloudinary django-cloudinary-storage gunicorn psycopg2-binary
+pip install -r requirements.txt
 ```
 
-整備後は次のコマンドで一覧を保存できます。
-
-```powershell
-pip freeze > requirements.txt
-```
+`requirements.txt` には、このプロジェクトで使うパッケージとバージョンが記載されています。ローカル開発と Render のビルドの両方で同じファイルを使います。
 
 ### 4-4. 環境変数ファイル `.env`
 
@@ -114,8 +108,6 @@ push していない commit は本番に反映されません。
 
 ## 7. 既知の制限・今後の改善
 
-- 投稿削除の「作者本人のみ」など、認可の強化
 - いいね API の CSRF / HTTP メソッドの見直し
 - Cloudinary 設定の環境変数化
-- `requirements.txt` の整備
 - 自動テストの追加
