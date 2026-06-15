@@ -12,11 +12,17 @@
                             <span class="me-3">
                                 {% if notification.notification_type == 'like' %}
                                     ❤️
+                                {% elif notification.notification_type == 'follow' %}
+                                    👤
                                 {% endif %}
                             </span>
                             <div>
                                 <strong>{{ notification.sender.username }}</strong> さんが
-                                あなたの投稿に「いいね」しました。
+                                {% if notification.notification_type == 'like' %}
+                                    あなたの投稿に「いいね」しました。
+                                {% elif notification.notification_type == 'follow' %}
+                                    あなたをフォローしました。
+                                {% endif %}
                                 <br>
                                 <small class="text-muted">{{ notification.created_at|date:"Y/m/d H:i" }}</small>
                             </div>

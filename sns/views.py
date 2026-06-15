@@ -1,14 +1,15 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import ListView, CreateView, DeleteView, DetailView, TemplateView
+from django.views.generic import ListView, CreateView, DeleteView, DetailView
 from django.urls import reverse_lazy
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.contrib.auth.models import User
+from django.contrib.auth.forms import UserCreationForm
+
 from .models import Post, Notification, Profile
 from .forms import PostForm, UserUpdateForm, ProfileUpdateForm
-from django.contrib.auth.forms import UserCreationForm
 
 # --- 投稿一覧 ---
 class PostListView(LoginRequiredMixin, ListView):
@@ -25,7 +26,7 @@ class PostCreateView(LoginRequiredMixin, CreateView):
     success_url = reverse_lazy('sns:index')
 
     def form_valid(self, form):
-        form.instance.author = self.request.user  # authorを使用
+        form.instance.author = self.request.user
         return super().form_valid(form)
 
 # --- 投稿削除 ---
@@ -61,15 +62,21 @@ class SignUpView(CreateView):
 # --- プロフィール編集 ---
 @login_required
 def profile_edit(request):
-    profile, created = Profile.objects.get_or_create(user=request.user)
+    profile, _ = Profile.objects.get_or_create(user=request.user)
     if request.method == 'POST':
-        form = ProfileUpdateForm(request.POST, request.FILES, instance=profile)
-        if form.is_valid():
-            form.save()
+        u_form = UserUpdateForm(request.POST, instance=request.user)
+        p_form = ProfileUpdateForm(request.POST, request.FILES, instance=profile)
+        if u_form.is_valid() and p_form.is_valid():
+            u_form.save()
+            p_form.save()
             return redirect('sns:index')
     else:
-        form = ProfileUpdateForm(instance=profile)
-    return render(request, 'sns/profile_edit.html', {'form': form})
+        u_form = UserUpdateForm(instance=request.user)
+        p_form = ProfileUpdateForm(instance=profile)
+    return render(request, 'sns/profile_edit.html', {
+        'u_form': u_form,
+        'p_form': p_form,
+    })
 
 # --- いいね機能（非同期対応版） ---
 @login_required
@@ -83,6 +90,13 @@ def like_post(request, pk):
     else:
         post.liked_by.add(request.user)
         is_liked = True
+        if post.author != request.user:
+            Notification.objects.create(
+                sender=request.user,
+                recipient=post.author,
+                notification_type='like',
+                post=post,
+            )
 
     return JsonResponse({
         'is_liked': is_liked,
@@ -94,10 +108,17 @@ def like_post(request, pk):
 def follow_unfollow(request, username):
     target_user = get_object_or_404(User, username=username)
     if request.user != target_user:
-        if target_user in request.user.profile.following.all():
-            request.user.profile.following.remove(target_user)
+        my_profile = request.user.profile
+        target_profile = target_user.profile
+        if target_profile in my_profile.following.all():
+            my_profile.following.remove(target_profile)
         else:
-            request.user.profile.following.add(target_user)
+            my_profile.following.add(target_profile)
+            Notification.objects.create(
+                sender=request.user,
+                recipient=target_user,
+                notification_type='follow',
+            )
     return redirect('sns:user_posts', username=username)
 
 # --- 通知一覧 ---
