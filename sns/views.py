@@ -20,7 +20,7 @@ class PostListView(LoginRequiredMixin, ListView):
 # --- 新規投稿 ---
 class PostCreateView(LoginRequiredMixin, CreateView):
     model = Post
-    fields = ['content', 'image']
+    form_class = PostForm
     template_name = 'sns/post_form.html'
     success_url = reverse_lazy('sns:index')
 
