@@ -13,11 +13,18 @@ import calendar
 
 from .models import Post, Notification, Profile
 from .forms import PostForm, UserUpdateForm, ProfileUpdateForm
-from .utils import sync_post_tags, get_monthly_daily_winners
+from .utils import (
+    sync_post_tags,
+    get_monthly_daily_winners,
+    get_mutual_follow_user_ids,
+    posts_visible_to,
+    can_view_post,
+)
 
 # --- 投稿一覧 ---
-# タブ「フォロー中」: 自分 + フォロー中ユーザーの投稿
-# タブ「みんな」: 自分以外かつ未フォローユーザーの投稿
+# タブ「フォロー中」: public のみ（自分 + フォロー中ユーザー）
+# タブ「みんな」: public のみ（未フォロー・自分以外）
+# タブ「相互フォロー」: mutual_only のみ（相互フォロー相手 + 自分）
 class PostListView(LoginRequiredMixin, ListView):
     model = Post
     template_name = 'sns/index.html'
@@ -26,23 +33,39 @@ class PostListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         user = self.request.user
         tab = self.request.GET.get('tab', 'following')
-        followed_user_ids = User.objects.filter(
+        followed_user_ids = list(User.objects.filter(
             profile__in=user.profile.following.all()
-        ).values_list('pk', flat=True)
+        ).values_list('pk', flat=True))
 
-        if tab == 'everyone':
-            return Post.objects.exclude(
-                author=user
-            ).exclude(
-                author_id__in=followed_user_ids
+        if tab == 'mutual':
+            mutual_ids = get_mutual_follow_user_ids(user)
+            author_ids = mutual_ids + [user.pk]
+            return Post.objects.filter(
+                visibility=Post.Visibility.MUTUAL_ONLY,
+                author_id__in=author_ids,
             ).order_by('-created_at')
 
-        author_ids = list(followed_user_ids) + [user.pk]
-        return Post.objects.filter(author_id__in=author_ids).order_by('-created_at')
+        if tab == 'everyone':
+            return Post.objects.filter(
+                visibility=Post.Visibility.PUBLIC,
+            ).exclude(
+                author=user,
+            ).exclude(
+                author_id__in=followed_user_ids,
+            ).order_by('-created_at')
+
+        author_ids = followed_user_ids + [user.pk]
+        return Post.objects.filter(
+            visibility=Post.Visibility.PUBLIC,
+            author_id__in=author_ids,
+        ).order_by('-created_at')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['active_tab'] = self.request.GET.get('tab', 'following')
+        tab = self.request.GET.get('tab', 'following')
+        if tab not in ('following', 'everyone', 'mutual'):
+            tab = 'following'
+        context['active_tab'] = tab
         return context
 
 # --- 新規投稿 ---
@@ -77,7 +100,10 @@ class UserProfileView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         profile_user = self.get_object()
-        posts = Post.objects.filter(author=profile_user).order_by('-created_at')
+        posts = posts_visible_to(
+            self.request.user,
+            Post.objects.filter(author=profile_user),
+        ).order_by('-created_at')
         context['posts'] = posts
         context['post_count'] = posts.count()
         return context
@@ -112,6 +138,8 @@ def profile_edit(request):
 @require_POST
 def like_post(request, pk):
     post = get_object_or_404(Post, pk=pk)
+    if not can_view_post(request.user, post):
+        return JsonResponse({'error': 'not allowed'}, status=404)
 
     if request.user in post.liked_by.all():
         post.liked_by.remove(request.user)
@@ -159,9 +187,12 @@ def search(request):
 
     if q:
         tag_name = q.lstrip('#').lower()
-        posts = Post.objects.filter(
-            Q(content__icontains=q) | Q(tags__name=tag_name)
-        ).distinct().order_by('-created_at')
+        posts = posts_visible_to(
+            request.user,
+            Post.objects.filter(
+                Q(content__icontains=q) | Q(tags__name=tag_name)
+            ).distinct(),
+        ).order_by('-created_at')
         users = User.objects.filter(username__icontains=q).order_by('username')
 
     return render(request, 'sns/search.html', {

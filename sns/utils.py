@@ -1,8 +1,7 @@
-import calendar
 import re
 from datetime import datetime
 
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.utils import timezone
 
 from .models import Post, Tag
@@ -26,12 +25,49 @@ def sync_post_tags(post):
     post.tags.set(tag_objects)
 
 
+def is_mutual_follow(user_a, user_b):
+    """A→B かつ B→A の相互フォローか。"""
+    if user_a.pk == user_b.pk:
+        return False
+    return (
+        user_b.profile in user_a.profile.following.all()
+        and user_a.profile in user_b.profile.following.all()
+    )
+
+
+def get_mutual_follow_user_ids(user):
+    """指定ユーザーと相互フォローのユーザー ID 一覧。"""
+    mutual_ids = []
+    for profile in user.profile.following.all():
+        if is_mutual_follow(user, profile.user):
+            mutual_ids.append(profile.user_id)
+    return mutual_ids
+
+
+def can_view_post(viewer, post):
+    """閲覧者が投稿を見られるか。"""
+    if post.author_id == viewer.pk:
+        return True
+    if post.visibility == Post.Visibility.PUBLIC:
+        return True
+    if post.visibility == Post.Visibility.MUTUAL_ONLY:
+        return is_mutual_follow(viewer, post.author)
+    return False
+
+
+def posts_visible_to(user, queryset):
+    """閲覧者に見える投稿だけに絞る（検索・プロフィール用）。"""
+    mutual_ids = get_mutual_follow_user_ids(user)
+    return queryset.filter(
+        Q(visibility=Post.Visibility.PUBLIC)
+        | Q(visibility=Post.Visibility.MUTUAL_ONLY, author_id__in=mutual_ids)
+        | Q(author=user)
+    ).distinct()
+
+
 def ranking_posts_queryset():
-    """ランキング対象の投稿。visibility フィールドがあれば public のみ。"""
-    qs = Post.objects.all()
-    if hasattr(Post, 'visibility'):
-        qs = qs.filter(visibility='public')
-    return qs
+    """ランキング対象: 通常公開のみ。"""
+    return Post.objects.filter(visibility=Post.Visibility.PUBLIC)
 
 
 def _month_bounds(year, month):

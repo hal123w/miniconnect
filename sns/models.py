@@ -5,12 +5,21 @@ from django.dispatch import receiver
 
 
 class Post(models.Model):
+    class Visibility(models.TextChoices):
+        PUBLIC = 'public', '公開'
+        MUTUAL_ONLY = 'mutual_only', '相互フォローのみ'
+
     content = models.TextField(max_length=140)
     image = models.ImageField(upload_to='post_pics/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     liked_by = models.ManyToManyField(User, related_name='liked_posts', blank=True)
     tags = models.ManyToManyField('Tag', related_name='posts', blank=True)
+    visibility = models.CharField(
+        max_length=20,
+        choices=Visibility.choices,
+        default=Visibility.PUBLIC,
+    )
 
     def __str__(self):
         return f'{self.author.username} - {self.content[:10]}'

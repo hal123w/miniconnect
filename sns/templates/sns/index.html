@@ -10,12 +10,16 @@
 
             <ul class="nav nav-tabs mb-4">
                 <li class="nav-item">
-                    <a class="nav-link {% if active_tab != 'everyone' %}active{% endif %}"
+                    <a class="nav-link {% if active_tab == 'following' %}active{% endif %}"
                        href="{% url 'sns:index' %}?tab=following">フォロー中</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link {% if active_tab == 'everyone' %}active{% endif %}"
                        href="{% url 'sns:index' %}?tab=everyone">みんな</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if active_tab == 'mutual' %}active{% endif %}"
+                       href="{% url 'sns:index' %}?tab=mutual">相互フォロー</a>
                 </li>
             </ul>
 
@@ -24,6 +28,8 @@
             {% empty %}
                 {% if active_tab == 'everyone' %}
                     <p class="text-center text-muted">未フォローユーザーの投稿はまだありません。</p>
+                {% elif active_tab == 'mutual' %}
+                    <p class="text-center text-muted">相互フォロー限定の投稿はまだありません。</p>
                 {% else %}
                     <p class="text-center text-muted">フォロー中の投稿はまだありません。</p>
                 {% endif %}

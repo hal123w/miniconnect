@@ -265,3 +265,115 @@ class RankingTests(TestCase):
     def test_ranking_requires_login(self):
         response = self.client.get(reverse('sns:ranking'))
         self.assertEqual(response.status_code, 302)
+
+
+class MutualVisibilityTests(TestCase):
+    def setUp(self):
+        self.author = User.objects.create_user(username='author', password='testpass123')
+        self.mutual_friend = User.objects.create_user(username='mutual', password='testpass123')
+        self.stranger = User.objects.create_user(username='stranger', password='testpass123')
+        self.author.profile.following.add(self.mutual_friend.profile)
+        self.mutual_friend.profile.following.add(self.author.profile)
+
+    def test_mutual_only_visible_to_mutual_follower_in_mutual_tab(self):
+        post = Post.objects.create(
+            author=self.author,
+            content='secret mutual',
+            visibility=Post.Visibility.MUTUAL_ONLY,
+        )
+        self.client.login(username='mutual', password='testpass123')
+        response = self.client.get(reverse('sns:index') + '?tab=mutual')
+        self.assertContains(response, 'secret mutual')
+
+    def test_mutual_only_hidden_from_non_mutual_in_search(self):
+        Post.objects.create(
+            author=self.author,
+            content='secret mutual search',
+            visibility=Post.Visibility.MUTUAL_ONLY,
+        )
+        self.client.login(username='stranger', password='testpass123')
+        response = self.client.get(reverse('sns:search'), {'q': 'secret'})
+        self.assertNotContains(response, 'secret mutual search')
+
+    def test_author_public_only_in_following_tab(self):
+        Post.objects.create(
+            author=self.author,
+            content='my public post',
+            visibility=Post.Visibility.PUBLIC,
+        )
+        Post.objects.create(
+            author=self.author,
+            content='my mutual post',
+            visibility=Post.Visibility.MUTUAL_ONLY,
+        )
+        self.client.login(username='author', password='testpass123')
+        following = self.client.get(reverse('sns:index') + '?tab=following')
+        mutual = self.client.get(reverse('sns:index') + '?tab=mutual')
+        self.assertContains(following, 'my public post')
+        self.assertNotContains(following, 'my mutual post')
+        self.assertContains(mutual, 'my mutual post')
+        self.assertNotContains(mutual, 'my public post')
+
+    def test_mutual_only_excluded_from_ranking(self):
+        from sns.utils import get_daily_winner
+        from django.utils import timezone
+        from datetime import datetime
+
+        post = Post.objects.create(
+            author=self.author,
+            content='rank secret',
+            visibility=Post.Visibility.MUTUAL_ONLY,
+        )
+        post.liked_by.add(self.mutual_friend)
+        tz = timezone.get_current_timezone()
+        now = timezone.localtime()
+        aware = timezone.make_aware(
+            datetime(now.year, now.month, now.day, 12, 0, 0), tz
+        )
+        Post.objects.filter(pk=post.pk).update(created_at=aware)
+        winner = get_daily_winner(now.year, now.month, now.day)
+        if winner:
+            self.assertNotEqual(winner.visibility, Post.Visibility.MUTUAL_ONLY)
+
+    def test_one_way_follow_cannot_see_mutual_only(self):
+        """A→B のみ（B→A なし）のとき、A は B の mutual_only を見られない。"""
+        follower = User.objects.create_user(username='follower', password='testpass123')
+        followed = User.objects.create_user(username='followed', password='testpass123')
+        follower.profile.following.add(followed.profile)
+
+        Post.objects.create(
+            author=followed,
+            content='one way secret',
+            visibility=Post.Visibility.MUTUAL_ONLY,
+        )
+
+        self.client.login(username='follower', password='testpass123')
+        mutual_tab = self.client.get(reverse('sns:index') + '?tab=mutual')
+        search = self.client.get(reverse('sns:search'), {'q': 'one way'})
+        profile = self.client.get(reverse('sns:user_posts', args=['followed']))
+
+        self.assertNotContains(mutual_tab, 'one way secret')
+        self.assertNotContains(search, 'one way secret')
+        self.assertNotContains(profile, 'one way secret')
+
+    def test_mutual_follow_can_see_mutual_only_everywhere(self):
+        """相互フォローなら mutual タブ・検索・プロフィールで見える。"""
+        user_a = User.objects.create_user(username='usera', password='testpass123')
+        user_b = User.objects.create_user(username='userb', password='testpass123')
+        user_a.profile.following.add(user_b.profile)
+        user_b.profile.following.add(user_a.profile)
+
+        Post.objects.create(
+            author=user_b,
+            content='both ways secret',
+            visibility=Post.Visibility.MUTUAL_ONLY,
+        )
+
+        self.client.login(username='usera', password='testpass123')
+        mutual_tab = self.client.get(reverse('sns:index') + '?tab=mutual')
+        search = self.client.get(reverse('sns:search'), {'q': 'both ways'})
+        profile = self.client.get(reverse('sns:user_posts', args=['userb']))
+
+        self.assertContains(mutual_tab, 'both ways secret')
+        self.assertContains(search, 'both ways secret')
+        self.assertContains(profile, 'both ways secret')

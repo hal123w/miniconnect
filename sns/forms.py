@@ -4,9 +4,14 @@ from .models import Post, Profile
 
 # 投稿用のフォーム
 class PostForm(forms.ModelForm):
+    mutual_only = forms.BooleanField(
+        required=False,
+        label='相互フォローのみ閲覧可',
+    )
+
     class Meta:
         model = Post
-        fields = ['content', "image"]
+        fields = ['content', 'image']
         widgets = {
             'content': forms.Textarea(attrs={
                 'class': 'form-control',
@@ -14,6 +19,17 @@ class PostForm(forms.ModelForm):
                 'rows': 3,
             }),
         }
+
+    def save(self, commit=True):
+        post = super().save(commit=False)
+        if self.cleaned_data.get('mutual_only'):
+            post.visibility = Post.Visibility.MUTUAL_ONLY
+        else:
+            post.visibility = Post.Visibility.PUBLIC
+        if commit:
+            post.save()
+            self.save_m2m()
+        return post
 
 # --- ここから下がプロフィール編集に必要です ---
 
