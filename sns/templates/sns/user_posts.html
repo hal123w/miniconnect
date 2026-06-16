@@ -53,33 +53,61 @@
 
             <h5 class="mb-3 fw-bold">投稿</h5>
             {% for post in posts %}
-            <div class="card mb-3 shadow-sm border-0" style="border-radius: 12px;">
-                <div class="card-body">
-                    <p class="card-text fs-5">{{ post.content }}</p>
-
-                    {% if post.image %}
-                        <div class="mt-2 text-center">
-                            <img src="{{ post.image.url }}" class="img-fluid rounded" style="max-height: 400px; object-fit: contain;">
-                        </div>
-                    {% endif %}
-                    <div class="d-flex align-items-center justify-content-between">
-                        <small class="text-muted">{{ post.created_at|date:"Y/m/d H:i" }}</small>
-                        <div class="d-flex align-items-center gap-2">
-                            {% if post.author == user %}
-                                <form method="post" action="{% url 'sns:delete' post.pk %}" class="d-inline" onsubmit="return confirm('この投稿を削除しますか？');">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-sm btn-outline-secondary">削除</button>
-                                </form>
-                            {% endif %}
-                            <div class="text-danger">❤️ {{ post.liked_by.count }}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                {% include "sns/_post_card.html" %}
             {% empty %}
                 <p class="text-center text-muted">まだ投稿がありません。</p>
             {% endfor %}
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function getCookie(name) {
+        const cookies = document.cookie ? document.cookie.split(';') : [];
+        for (const cookie of cookies) {
+            const trimmed = cookie.trim();
+            if (trimmed.startsWith(name + '=')) {
+                return decodeURIComponent(trimmed.substring(name.length + 1));
+            }
+        }
+        return null;
+    }
+
+    document.querySelectorAll('.ajax-like-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+
+            const url = this.getAttribute('data-url');
+            const btn = this;
+            const csrfToken = getCookie('csrftoken');
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                const heartSpan = btn.querySelector('.heart');
+                const countSpan = btn.querySelector('.like-count');
+
+                if (data.is_liked) {
+                    btn.classList.remove('btn-outline-danger');
+                    btn.classList.add('btn-danger');
+                    if (heartSpan) heartSpan.innerText = '❤️';
+                } else {
+                    btn.classList.remove('btn-danger');
+                    btn.classList.add('btn-outline-danger');
+                    if (heartSpan) heartSpan.innerText = '🤍';
+                }
+                if (countSpan) countSpan.innerText = data.like_count;
+            })
+            .catch(error => console.error("Error:", error));
+        });
+    });
+});
+</script>
 {% endblock %}
