@@ -4,24 +4,26 @@
 <div class="container mt-4">
     <div class="row justify-content-center">
         <div class="col-md-8">
-            <div class="card shadow-sm mb-4 border-0 overflow-hidden" style="border-radius: 15px;">
-                <div style="height: 120px; background: linear-gradient(90deg, #007bff 0%, #00d4ff 100%);"></div>
-                
-                <div class="card-body text-center position-relative" style="margin-top: -60px;">
+            <div class="card rounded-3 shadow-sm mb-4 border-0 overflow-hidden">
+                <div class="bg-primary" style="height: 100px;"></div>
+
+                <div class="card-body text-center position-relative pt-0 pb-4" style="margin-top: -50px;">
                     {% if profile_user.profile.image %}
-                        <img src="{{ profile_user.profile.image.url }}" class="rounded-circle mb-3 shadow" style="width: 120px; height: 120px; object-fit: cover; border: 5px solid #fff;">
+                        <img src="{{ profile_user.profile.image.url }}" class="rounded-circle mb-3 shadow border border-3 border-white"
+                             style="width: 100px; height: 100px; object-fit: cover;" alt="">
                     {% else %}
-                        <div class="bg-secondary rounded-circle mx-auto mb-3 shadow" style="width: 120px; height: 120px; border: 5px solid #fff;"></div>
+                        <div class="bg-secondary rounded-circle mx-auto mb-3 shadow border border-3 border-white"
+                             style="width: 100px; height: 100px;"></div>
                     {% endif %}
-                    
-                    <h3 class="fw-bold mb-0">@{{ profile_user.username }}</h3>
-                    
-                    <div class="text-muted small mb-2">
-                        <span class="fw-bold text-dark">{{ post_count }}</span> 投稿
+
+                    <h3 class="fw-bold mb-1">@{{ profile_user.username }}</h3>
+
+                    <div class="text-muted small mb-3">
+                        <span class="fw-semibold text-dark">{{ post_count }}</span> 投稿
                     </div>
 
                     {% if profile_user.profile.bio %}
-                        <p class="text-muted mt-2 mx-auto" style="max-width: 500px;">{{ profile_user.profile.bio }}</p>
+                        <p class="text-muted mb-3 mx-auto px-3" style="max-width: 500px;">{{ profile_user.profile.bio }}</p>
                     {% endif %}
 
                     <div class="d-flex justify-content-center gap-4 mb-3">
@@ -34,17 +36,18 @@
                             <small class="text-muted">フォロワー</small>
                         </div>
                     </div>
+
                     {% if profile_user == user %}
-                        <a href="{% url 'sns:profile_edit' %}" class="btn btn-outline-primary btn-sm mt-2" style="border-radius: 20px; padding: 5px 25px;">プロフィールを編集</a>
+                        <a href="{% url 'sns:profile_edit' %}" class="btn btn-outline-primary btn-sm">プロフィールを編集</a>
                     {% endif %}
 
                     {% if profile_user != user %}
-                        <form action="{% url 'sns:follow_unfollow' profile_user.username %}" method="POST">
+                        <form action="{% url 'sns:follow_unfollow' profile_user.username %}" method="POST" class="d-inline">
                             {% csrf_token %}
                             {% if user.profile in profile_user.profile.followers.all %}
-                                <button type="submit" class="btn btn-outline-secondary btn-sm mt-2" style="border-radius: 20px; padding: 5px 25px;">フォロー解除</button>
+                                <button type="submit" class="btn btn-outline-secondary btn-sm">フォロー解除</button>
                             {% else %}
-                                <button type="submit" class="btn btn-primary btn-sm mt-2" style="border-radius: 20px; padding: 5px 25px;">フォローする</button>
+                                <button type="submit" class="btn btn-primary btn-sm">フォローする</button>
                             {% endif %}
                         </form>
                     {% endif %}
