@@ -1,6 +1,8 @@
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
+from datetime import datetime
 
 from .models import Notification, Post
 
@@ -209,3 +211,57 @@ class SearchViewTests(TestCase):
         self.client.login(username='findme', password='testpass123')
         response = self.client.get(reverse('sns:search'), {'q': 'find'})
         self.assertContains(response, 'findme')
+
+
+class RankingTests(TestCase):
+    def setUp(self):
+        self.user1 = User.objects.create_user(username='rankuser1', password='testpass123')
+        self.user2 = User.objects.create_user(username='rankuser2', password='testpass123')
+        self.liker = User.objects.create_user(username='liker2', password='testpass123')
+
+    def _make_post_on(self, author, content, year, month, day, hour=12):
+        post = Post.objects.create(author=author, content=content)
+        tz = timezone.get_current_timezone()
+        aware = timezone.make_aware(datetime(year, month, day, hour, 0, 0), tz)
+        Post.objects.filter(pk=post.pk).update(created_at=aware)
+        post.refresh_from_db()
+        return post
+
+    def test_daily_winner_picks_most_likes(self):
+        from sns.utils import get_daily_winner
+
+        post1 = self._make_post_on(self.user1, 'post a', 2026, 6, 10)
+        post2 = self._make_post_on(self.user2, 'post b', 2026, 6, 10)
+        post1.liked_by.add(self.liker)
+        post2.liked_by.add(self.liker)
+        post2.liked_by.add(self.user1)
+
+        winner = get_daily_winner(2026, 6, 10)
+        self.assertEqual(winner.pk, post2.pk)
+        self.assertEqual(winner.like_count, 2)
+
+    def test_tie_goes_to_newer_post(self):
+        from sns.utils import get_daily_winner
+
+        old = self._make_post_on(self.user1, 'old post', 2026, 6, 15, hour=10)
+        new = self._make_post_on(self.user2, 'new post', 2026, 6, 15, hour=14)
+        old.liked_by.add(self.liker)
+        new.liked_by.add(self.user1)
+
+        winner = get_daily_winner(2026, 6, 15)
+        self.assertEqual(winner.pk, new.pk)
+
+    def test_ranking_page_shows_like_count_and_selected_post(self):
+        post = self._make_post_on(self.user1, 'winner post', 2026, 6, 20)
+        post.liked_by.add(self.liker)
+        self.client.login(username='rankuser1', password='testpass123')
+        response = self.client.get(reverse('sns:ranking'), {
+            'year': 2026, 'month': 6, 'day': 20,
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '❤️ 1')
+        self.assertContains(response, 'winner post')
+
+    def test_ranking_requires_login(self):
+        response = self.client.get(reverse('sns:ranking'))
+        self.assertEqual(response.status_code, 302)

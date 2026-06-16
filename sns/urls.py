@@ -34,4 +34,5 @@ urlpatterns = [
     path('account/delete/', views.account_delete, name='account_delete'),
     path('notifications/', views.notification_list, name='notifications'),
     path('search/', views.search, name='search'),
+    path('ranking/', views.ranking, name='ranking'),
 ]

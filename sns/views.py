@@ -1,17 +1,19 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView, CreateView, DeleteView, DetailView
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.contrib.auth.models import User
+from django.utils import timezone
 from django.contrib.auth.forms import UserCreationForm
 from django.db.models import Q
+import calendar
 
 from .models import Post, Notification, Profile
 from .forms import PostForm, UserUpdateForm, ProfileUpdateForm
-from .utils import sync_post_tags
+from .utils import sync_post_tags, get_monthly_daily_winners
 
 # --- 投稿一覧 ---
 # タブ「フォロー中」: 自分 + フォロー中ユーザーの投稿
@@ -166,6 +168,81 @@ def search(request):
         'q': q,
         'posts': posts,
         'users': users,
+    })
+
+# --- 日別いいねランキング（カレンダー） ---
+@login_required
+def ranking(request):
+    now = timezone.localtime()
+    try:
+        year = int(request.GET.get('year', now.year))
+        month = int(request.GET.get('month', now.month))
+    except (TypeError, ValueError):
+        year, month = now.year, now.month
+
+    month = max(1, min(12, month))
+    days_in_month = calendar.monthrange(year, month)[1]
+
+    selected_day = None
+    day_param = request.GET.get('day')
+    if day_param:
+        try:
+            day = int(day_param)
+            if 1 <= day <= days_in_month:
+                selected_day = day
+        except (TypeError, ValueError):
+            pass
+
+    winners = get_monthly_daily_winners(year, month)
+
+    def ranking_url(y, m, d=None):
+        url = f"{reverse('sns:ranking')}?year={y}&month={m}"
+        if d is not None:
+            url += f"&day={d}"
+        return url
+
+    if month == 1:
+        prev_month = (year - 1, 12)
+    else:
+        prev_month = (year, month - 1)
+    if month == 12:
+        next_month = (year + 1, 1)
+    else:
+        next_month = (year, month + 1)
+
+    cal = calendar.Calendar(firstweekday=6)
+    weeks = []
+    for week in cal.monthdayscalendar(year, month):
+        row = []
+        for day in week:
+            if day == 0:
+                row.append({'day': 0})
+            else:
+                winner = winners.get(day)
+                row.append({
+                    'day': day,
+                    'like_count': winner.like_count if winner else None,
+                    'url': ranking_url(year, month, day),
+                    'active': selected_day == day,
+                })
+        weeks.append(row)
+
+    year_choices = range(now.year - 5, now.year + 6)
+    selected_post = winners.get(selected_day) if selected_day else None
+
+    return render(request, 'sns/ranking.html', {
+        'year': year,
+        'month': month,
+        'months': range(1, 13),
+        'weeks': weeks,
+        'selected_day': selected_day,
+        'selected_post': selected_post,
+        'prev_month_url': ranking_url(*prev_month),
+        'next_month_url': ranking_url(*next_month),
+        'prev_year_url': ranking_url(year - 1, month),
+        'next_year_url': ranking_url(year + 1, month),
+        'year_choices': year_choices,
+        'current_year_url': ranking_url(now.year, now.month),
     })
 
 # --- 通知一覧 ---
