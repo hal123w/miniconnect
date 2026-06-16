@@ -2,50 +2,49 @@
 {% load static %}
 
 {% block content %}
-<div class="container mt-5">
+<div class="container mt-4">
     <div class="row justify-content-center">
         <div class="col-md-8">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white">
-                    <h4 class="mb-0">プロフィールの編集</h4>
-                </div>
+            <h3 class="mb-4">プロフィールの編集</h3>
+
+            <div class="card rounded-3 shadow-sm border-0">
                 <div class="card-body p-4">
                     <form method="POST" enctype="multipart/form-data">
                         {% csrf_token %}
-                        
+
                         <div class="text-center mb-4">
                             {% if user.profile.image %}
-                                <img src="{{ user.profile.image.url }}" class="rounded-circle img-thumbnail" style="width: 150px; height: 150px; object-fit: cover;">
+                                <img src="{{ user.profile.image.url }}" class="rounded-circle img-thumbnail" style="width: 150px; height: 150px; object-fit: cover;" alt="">
                             {% else %}
-                                <img src="{% static 'sns/images/default.png' %}" class="rounded-circle img-thumbnail" style="width: 150px; height: 150px; object-fit: cover;">
+                                <img src="{% static 'sns/images/default.png' %}" class="rounded-circle img-thumbnail" style="width: 150px; height: 150px; object-fit: cover;" alt="">
                             {% endif %}
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold">ユーザー名</label>
+                            <label class="form-label fw-semibold">ユーザー名</label>
                             {{ u_form.username }}
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold">プロフィール画像</label>
+                            <label class="form-label fw-semibold">プロフィール画像</label>
                             {{ p_form.image }}
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label fw-bold">自己紹介</label>
+                            <label class="form-label fw-semibold">自己紹介</label>
                             {{ p_form.bio }}
                         </div>
-                        
+
                         <div class="d-grid gap-2">
                             <button class="btn btn-primary btn-lg" type="submit">保存する</button>
                             <a href="{% url 'sns:index' %}" class="btn btn-link text-secondary">キャンセルして戻る</a>
                         </div>
 
                         <hr class="my-4">
-                        
-                        <div class="bg-light p-3 rounded">
+
+                        <div class="bg-light p-3 rounded-3">
                             <h5 class="text-danger mb-3">セキュリティ・その他</h5>
-                            <div class="d-flex gap-2">
+                            <div class="d-flex flex-wrap gap-2">
                                 <a href="{% url 'sns:my_password_change' %}" class="btn btn-outline-secondary btn-sm">
                                     パスワードを変更する
                                 </a>
@@ -60,13 +59,4 @@
         </div>
     </div>
 </div>
-
-<script>
-    // フォームの入力欄にBootstrapのクラスを自動で付与する
-    document.querySelectorAll('input, textarea').forEach(function(el) {
-        if (el.type !== 'file' && el.type !== 'checkbox') {
-            el.classList.add('form-control');
-        }
-    });
-</script>
 {% endblock %}

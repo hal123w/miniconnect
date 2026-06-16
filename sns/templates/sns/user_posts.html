@@ -1,7 +1,7 @@
 {% extends "sns/base.html" %}
 
 {% block content %}
-<div class="container">
+<div class="container mt-4">
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card shadow-sm mb-4 border-0 overflow-hidden" style="border-radius: 15px;">
@@ -61,53 +61,5 @@
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    function getCookie(name) {
-        const cookies = document.cookie ? document.cookie.split(';') : [];
-        for (const cookie of cookies) {
-            const trimmed = cookie.trim();
-            if (trimmed.startsWith(name + '=')) {
-                return decodeURIComponent(trimmed.substring(name.length + 1));
-            }
-        }
-        return null;
-    }
-
-    document.querySelectorAll('.ajax-like-btn').forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-
-            const url = this.getAttribute('data-url');
-            const btn = this;
-            const csrfToken = getCookie('csrftoken');
-
-            fetch(url, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': csrfToken,
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-            })
-            .then(response => response.json())
-            .then(data => {
-                const heartSpan = btn.querySelector('.heart');
-                const countSpan = btn.querySelector('.like-count');
-
-                if (data.is_liked) {
-                    btn.classList.remove('btn-outline-danger');
-                    btn.classList.add('btn-danger');
-                    if (heartSpan) heartSpan.innerText = '❤️';
-                } else {
-                    btn.classList.remove('btn-danger');
-                    btn.classList.add('btn-outline-danger');
-                    if (heartSpan) heartSpan.innerText = '🤍';
-                }
-                if (countSpan) countSpan.innerText = data.like_count;
-            })
-            .catch(error => console.error("Error:", error));
-        });
-    });
-});
-</script>
+{% include "sns/_like_script.html" %}
 {% endblock %}
